@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup 2026 估波遊戲</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --bg:       #070b12;
+    --surface:  #0f1923;
+    --surface2: #162031;
+    --gold:     #F0B429;
+    --gold-dim: rgba(240,180,41,0.12);
+    --green:    #00D68F;
+    --red:      #FF3B5C;
+    --grey:     #2a3a4a;
+    --grey-txt: #5a7080;
+    --cream:    #d8e8f0;
+    --white:    #ffffff;
+    --border:   rgba(255,255,255,0.07);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--cream);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 100% 40% at 50% 0%, rgba(240,180,41,0.06) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 60px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 52px 0 44px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 52px;
+  }
+
+  .header .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid rgba(240,180,41,0.28);
+    border-radius: 3px;
+    padding: 5px 11px;
+    margin-bottom: 22px;
+  }
+  .chip .dot {
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+  .header h1 {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(38px, 9vw, 76px);
+    color: var(--white);
+    letter-spacing: -0.025em;
+    line-height: 0.95;
+    margin-bottom: 14px;
+  }
+  .header h1 .gold { color: var(--gold); }
+
+  .header .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--grey-txt);
+    letter-spacing: 0.12em;
+    margin-bottom: 30px;
+  }
+
+  .btn-refresh {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    padding: 13px 30px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  .btn-refresh:hover  { filter: brightness(1.12); transform: translateY(-1px); }
+  .btn-refresh:active { transform: translateY(0); }
+  .btn-refresh:disabled { opacity: 0.45; cursor: wait; }
+
+  .update-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--grey-txt);
+    margin-top: 11px;
+  }
+  .update-status .live { color: var(--green); }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 60px; }
+
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── THREE BOARDS ── */
+  .boards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 760px) { .boards-grid { grid-template-columns: 1fr; } }
+
+  .board {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .board-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 15px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .board-head .icon { font-size: 15px; line-height: 1; }
+  .board-head .title {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 13px;
+    color: var(--white);
+    letter-spacing: 0.03em;
+  }
+  .board-head .edit-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .board-head .edit-btn:hover { background: var(--gold-dim); border-color: rgba(240,180,41,0.4); }
+
+  .board-row {
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 15px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .board-row:last-child { border-bottom: none; }
+  .board-row:hover { background: rgba(255,255,255,0.025); }
+  .board-row.top { background: var(--gold-dim); }
+  .board-row.dimmed { opacity: 0.28; }
+
+  .rank-num {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 13px;
+    color: var(--grey-txt);
+    text-align: center;
+  }
+  .board-row.top .rank-num { color: var(--gold); }
+
+  .row-info { min-width: 0; }
+  .row-info .person {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .row-info .pick {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--grey-txt);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+
+  .row-stat {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 20px;
+    color: var(--cream);
+    text-align: right;
+  }
+  .board-row.top .row-stat { color: var(--gold); }
+  .row-stat.empty {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--grey-txt);
+  }
+
+  /* status badges (third-place board) */
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .badge.alive  { background: rgba(0,214,143,0.12); color: var(--green);    border: 1px solid rgba(0,214,143,0.25); }
+  .badge.third  { background: var(--gold-dim);       color: var(--gold);     border: 1px solid rgba(240,180,41,0.3); }
+  .badge.out    { background: rgba(255,255,255,0.04); color: var(--grey-txt); border: 1px solid var(--border); }
+
+  /* ── TEAM GRID ── */
+  .team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+    gap: 8px;
+  }
+
+  .team-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    transition: all 0.2s;
+    color: var(--cream);
+  }
+  .team-card .flag { font-size: 20px; display: block; margin-bottom: 5px; }
+
+  .team-card.out {
+    opacity: 0.18;
+    filter: grayscale(1);
+  }
+  .team-card.third {
+    background: linear-gradient(135deg, rgba(240,180,41,0.18), rgba(240,180,41,0.06));
+    border-color: rgba(240,180,41,0.45);
+    color: var(--gold);
+    box-shadow: 0 0 14px rgba(240,180,41,0.12);
+  }
+
+  .result-banner {
+    margin-top: 18px;
+    padding: 15px 20px;
+    background: var(--surface);
+    border: 1px dashed rgba(240,180,41,0.35);
+    border-radius: 8px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--grey-txt);
+  }
+  .result-banner strong {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 17px;
+    color: var(--gold);
+    display: block;
+    margin-top: 5px;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(7,11,18,0.88);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid rgba(240,180,41,0.25);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 380px;
+    width: 100%;
+  }
+  .modal h3 {
+    font-family: 'Archivo Black', sans-serif;
+    color: var(--white);
+    font-size: 15px;
+    margin-bottom: 5px;
+  }
+  .modal .modal-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--grey-txt);
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  .edit-row {
+    display: grid;
+    grid-template-columns: 1fr 68px;
+    gap: 8px;
+    margin-bottom: 7px;
+    align-items: center;
+  }
+  .edit-row .country-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--cream);
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+  .edit-row input[type="number"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--gold);
+    padding: 8px 6px;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 17px;
+    text-align: center;
+    width: 100%;
+    -moz-appearance: textfield;
+  }
+  .edit-row input[type="number"]::-webkit-inner-spin-button,
+  .edit-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .edit-row input[type="number"]:focus { outline: 1px solid var(--gold); border-color: var(--gold); }
+
+  .modal-actions {
+    display: flex;
+    gap: 9px;
+    margin-top: 18px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 11px;
+    border-radius: 6px;
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 11.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .btn-save   { background: var(--gold); color: #000; }
+  .btn-cancel { background: rgba(255,255,255,0.05); color: var(--grey-txt); border: 1px solid var(--border); }
+
+  .json-output { margin-top: 16px; }
+  .json-output p { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--grey-txt); margin-bottom: 6px; }
+  .json-output textarea {
+    width: 100%; height: 110px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--cream);
+    padding: 9px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; resize: none;
+  }
+  .json-output textarea:focus { outline: 1px solid var(--gold); }
+  .btn-copy {
+    margin-top: 8px; width: 100%;
+    background: var(--gold); color: #000;
+    border: none; border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 11.5px;
+    padding: 10px; cursor: pointer;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  footer {
+    text-align: center;
+    padding-top: 36px;
+    border-top: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--grey-txt);
+    line-height: 1.9;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="chip"><span class="dot"></span>FIFA · WORLD CUP · 2026</div>
+    <h1>WORLD CUP <span class="gold">2026</span></h1>
+    <div class="sub">估波遊戲 &nbsp;·&nbsp; 神射手 &nbsp;·&nbsp; 第三名 &nbsp;·&nbsp; 最多黃牌</div>
+    <button class="btn-refresh" id="updateBtn" onclick="updateAllData()">↻ 更新數據</button>
+    <div class="update-status" id="updateStatus">未更新</div>
+  </div>
+
+  <!-- SECTION 01: THREE LEADERBOARDS -->
+  <div class="section">
+    <div class="section-eyebrow">01 &nbsp; 估測榜</div>
+    <div class="boards-grid">
+
+      <div class="board" id="scorerBoard">
+        <div class="board-head">
+          <span class="icon">⚽</span>
+          <span class="title">神射手</span>
+        </div>
+      </div>
+
+      <div class="board" id="thirdBoard">
+        <div class="board-head">
+          <span class="icon">🥉</span>
+          <span class="title">第三名</span>
+        </div>
+      </div>
+
+      <div class="board" id="cardsBoard">
+        <div class="board-head">
+          <span class="icon">🟨</span>
+          <span class="title">最多黃牌</span>
+          <button class="edit-btn" onclick="openCardsEditor()">✏ 編輯</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 02: 48-TEAM GRID -->
+  <div class="section">
+    <div class="section-eyebrow">02 &nbsp; 48強淘汰狀況</div>
+    <div class="team-grid" id="teamGrid"></div>
+    <div class="result-banner" id="resultBanner">季軍戰賽程暫未確定</div>
+  </div>
+
+  <footer>
+    數據來源：openfootball / worldcup.json（每日約更新一次）<br>
+    黃牌數據手動維護
+  </footer>
+</div>
+
+<!-- YELLOW CARDS MODAL -->
+<div class="modal-overlay" id="cardsModal">
+  <div class="modal">
+    <h3>🟨 黃牌數更新</h3>
+    <div class="modal-desc">輸入各人選擇國家的黃牌數量，儲存後頁面即時更新排名。<br>同時生成 JSON 供更新 cards.json 檔案。</div>
+    <div id="cardsEditRows"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCardsEditor()">取消</button>
+      <button class="btn-save" onclick="saveCardsEditor()">儲存</button>
+    </div>
+    <div class="json-output" id="cardsJsonOutput" style="display:none;">
+      <p>複製以下 JSON → 貼去 <code>cards.json</code> → commit:</p>
+      <textarea id="cardsJsonText" readonly></textarea>
+      <button class="btn-copy" id="copyJsonBtn" onclick="copyCardsJson()">📋 複製 JSON</button>
+      <button class="btn-cancel" onclick="closeCardsEditor()" style="margin-top:8px; width:100%; padding:11px;">✕ 關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── PREDICTIONS ── */
+const predictions = [
+  { name: "Dick",  scorer: "Raphinha",           scorerKey: "Raphinha", third: "Japan",     cards: "Portugal" },
+  { name: "硬",    scorer: "Folarin Balogun",    scorerKey: "Balogun",  third: "Norway",    cards: "Netherlands" },
+  { name: "第二",  scorer: "Kylian Mbappé",      scorerKey: "Mbapp",    third: "Spain",     cards: "Uruguay" },
+  { name: "東",    scorer: "Cristiano Ronaldo",   scorerKey: "Ronaldo",  third: "Germany",   cards: "Argentina" },
+  { name: "Derek", scorer: "Harry Kane",          scorerKey: "Kane",     third: "Argentina", cards: "Morocco" },
+  { name: "心",    scorer: "Lionel Messi",        scorerKey: "Messi",    third: "England",   cards: "Spain" },
+  { name: "陳生",  scorer: "Kylian Mbappé",      scorerKey: "Mbapp",    third: "Brazil",    cards: "Argentina" },
+  { name: "蕉",    scorer: "Kylian Mbappé",      scorerKey: "Mbapp",    third: "Portugal",  cards: "Scotland" },
+  { name: "Mac",   scorer: "Lionel Messi",        scorerKey: "Messi",    third: "Germany",   cards: "Scotland" },
+];
+
+/* ── 48 TEAMS ── */
+const allTeams = [
+  "Mexico","South Africa","South Korea","Czech Republic",
+  "Canada","Bosnia and Herzegovina","Qatar","Switzerland",
+  "Brazil","Morocco","Haiti","Scotland",
+  "USA","Paraguay","Australia","Turkey",
+  "Germany","Curacao","Ivory Coast","Ecuador",
+  "Netherlands","Japan","Sweden","Tunisia",
+  "Belgium","Egypt","Iran","New Zealand",
+  "Spain","Cape Verde","Saudi Arabia","Uruguay",
+  "France","Senegal","Iraq","Norway",
+  "Argentina","Algeria","Austria","Jordan",
+  "Portugal","DR Congo","Uzbekistan","Colombia",
+  "England","Croatia","Ghana","Panama"
+];
+
+const FLAG = {
+  "Mexico":"🇲🇽","South Africa":"🇿🇦","South Korea":"🇰🇷","Czech Republic":"🇨🇿",
+  "Canada":"🇨🇦","Bosnia and Herzegovina":"🇧🇦","Qatar":"🇶🇦","Switzerland":"🇨🇭",
+  "Brazil":"🇧🇷","Morocco":"🇲🇦","Haiti":"🇭🇹","Scotland":"🏴",
+  "USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turkey":"🇹🇷",
+  "Germany":"🇩🇪","Curacao":"🇨🇼","Ivory Coast":"🇨🇮","Ecuador":"🇪🇨",
+  "Netherlands":"🇳🇱","Japan":"🇯🇵","Sweden":"🇸🇪","Tunisia":"🇹🇳",
+  "Belgium":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
+  "Spain":"🇪🇸","Cape Verde":"🇨🇻","Saudi Arabia":"🇸🇦","Uruguay":"🇺🇾",
+  "France":"🇫🇷","Senegal":"🇸🇳","Iraq":"🇮🇶","Norway":"🇳🇴",
+  "Argentina":"🇦🇷","Algeria":"🇩🇿","Austria":"🇦🇹","Jordan":"🇯🇴",
+  "Portugal":"🇵🇹","DR Congo":"🇨🇩","Uzbekistan":"🇺🇿","Colombia":"🇨🇴",
+  "England":"🏴","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦",
+  "挪威":"🇳🇴","日本":"🇯🇵"
+};
+
+/* ── YELLOW CARDS STATE ── */
+const cardCountries = [...new Set(predictions.map(p => p.cards))];
+let cardsCounts = Object.fromEntries(cardCountries.map(c => [c, 0]));
+let cardsUpdatedAt = null;
+
+/* ── BOARD HELPERS ── */
+function boardRows(boardId, rows) {
+  const board = document.getElementById(boardId);
+  const head  = board.querySelector('.board-head');
+  board.innerHTML = '';
+  board.appendChild(head);
+  rows.forEach(r => board.appendChild(r));
+}
+
+function makeRow(rank, personName, pickText, statEl, isTop, isDimmed) {
+  const div = document.createElement('div');
+  div.className = 'board-row' + (isTop ? ' top' : '') + (isDimmed ? ' dimmed' : '');
+  div.innerHTML = `
+    <span class="rank-num">${rank}</span>
+    <div class="row-info">
+      <div class="person">${personName}</div>
+      <div class="pick">${pickText}</div>
+    </div>
+  `;
+  div.appendChild(statEl);
+  return div;
+}
+
+/* ── SCORER BOARD ── */
+function renderScorerBoard(topScorers) {
+  // match each pick to scorer list via loose substring match
+  const scored = predictions.map(p => {
+    const key = (p.scorerKey || p.scorer).toLowerCase();
+    const match = topScorers.find(s => s.name.toLowerCase().includes(key));
+    return { ...p, goals: match ? match.count : null };
+  });
+  scored.sort((a, b) => {
+    if (a.goals === null && b.goals === null) return 0;
+    if (a.goals === null) return 1;
+    if (b.goals === null) return -1;
+    return b.goals - a.goals;
+  });
+
+  const rows = scored.map((r, i) => {
+    const statEl = document.createElement('span');
+    if (r.goals !== null) {
+      statEl.className = 'row-stat';
+      statEl.textContent = r.goals;
+    } else {
+      statEl.className = 'row-stat empty';
+      statEl.textContent = '—';
+    }
+    return makeRow(i + 1, r.name, r.scorer, statEl, i === 0 && r.goals !== null, false);
+  });
+  boardRows('scorerBoard', rows);
+}
+
+/* ── THIRD BOARD ── */
+function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
+  const STATUS_ORDER = { winner: 0, third: 1, alive: 2, out: 3 };
+
+  const data = predictions.map(p => {
+    let s = 'alive';
+    if (p.third === thirdWinner) s = 'winner';
+    else if (thirdTeams.includes(p.third)) s = 'third';
+    else if (eliminated.has(p.third) || finalists.includes(p.third)) s = 'out';
+    return { ...p, status: s };
+  });
+  data.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+
+  const rows = data.map((r, i) => {
+    const badge = document.createElement('span');
+    if (r.status === 'winner')   { badge.className = 'badge third'; badge.textContent = '🥉 季軍'; }
+    else if (r.status === 'third') { badge.className = 'badge third'; badge.textContent = '季軍戰'; }
+    else if (r.status === 'alive') { badge.className = 'badge alive'; badge.textContent = '未輸'; }
+    else                           { badge.className = 'badge out';   badge.textContent = '出局'; }
+
+    const flag = FLAG[r.third] || '';
+    return makeRow(i + 1, r.name, `${flag} ${r.third}`, badge, r.status === 'winner', r.status === 'out');
+  });
+  boardRows('thirdBoard', rows);
+}
+
+/* ── CARDS BOARD ── */
+function renderCardsBoard() {
+  const data = predictions.map(p => ({
+    ...p,
+    count: cardsCounts[p.cards] ?? 0
+  }));
+  data.sort((a, b) => b.count - a.count);
+
+  const rows = data.map((r, i) => {
+    const statEl = document.createElement('span');
+    if (r.count > 0) {
+      statEl.className = 'row-stat';
+      statEl.textContent = r.count;
+    } else {
+      statEl.className = 'row-stat empty';
+      statEl.textContent = '—';
+    }
+    const flag = FLAG[r.cards] || '';
+    return makeRow(i + 1, r.name, `${flag} ${r.cards}`, statEl, i === 0 && r.count > 0, false);
+  });
+  boardRows('cardsBoard', rows);
+}
+
+/* ── FETCH WORLD CUP DATA ── */
+async function updateAllData() {
+  const btn    = document.getElementById('updateBtn');
+  const status = document.getElementById('updateStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ 更新中...';
+
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data    = await res.json();
+    const matches = data.matches || [];
+
+    /* top scorers */
+    const scorerCounts = {};
+    matches.forEach(m => {
+      [...(m.goals1 || []), ...(m.goals2 || [])].forEach(g => {
+        if (g.name) scorerCounts[g.name] = (scorerCounts[g.name] || 0) + 1;
+      });
+    });
+    const topScorers = Object.entries(scorerCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    /* knockout resolution */
+    const placeholderResolve = {};
+    const eliminated = new Set();
+
+    function resolve(ref) {
+      if (!ref) return null;
+      return placeholderResolve[ref] || (allTeams.includes(ref) ? ref : ref);
+    }
+
+    const KW = ['Round of 16','Quarter','Semi','Final','third place','Third place','third-place'];
+    const knockoutMatches = matches.filter(m => KW.some(k => (m.round || '').includes(k)));
+
+    for (let pass = 0; pass < 5; pass++) {
+      knockoutMatches.forEach(m => {
+        if (!m.score?.ft) return;
+        const t1 = resolve(m.team1), t2 = resolve(m.team2);
+        if (!t1 || !t2 || /^[WL]\d+$/.test(t1) || /^[WL]\d+$/.test(t2)) return;
+        const [s1, s2] = m.score.ft;
+        let winner, loser;
+        if (m.score.p) {
+          [winner, loser] = m.score.p[0] > m.score.p[1] ? [t1, t2] : [t2, t1];
+        } else if (s1 !== s2) {
+          [winner, loser] = s1 > s2 ? [t1, t2] : [t2, t1];
+        } else return;
+        if (!(m.round || '').match(/third.place/i)) eliminated.add(loser);
+        if (m.num) { placeholderResolve['W' + m.num] = winner; placeholderResolve['L' + m.num] = loser; }
+      });
+    }
+
+    /* third-place match */
+    let thirdWinner  = null;
+    let thirdTeams   = [];
+    let finalists    = [];
+
+    const tpm = matches.find(m => (m.round || '').match(/third.place/i));
+    if (tpm) {
+      const t1 = resolve(tpm.team1), t2 = resolve(tpm.team2);
+      if (t1 && allTeams.includes(t1)) thirdTeams.push(t1);
+      if (t2 && allTeams.includes(t2)) thirdTeams.push(t2);
+      if (tpm.score?.ft) {
+        const [s1, s2] = tpm.score.ft;
+        thirdWinner = tpm.score.p
+          ? (tpm.score.p[0] > tpm.score.p[1] ? t1 : t2)
+          : (s1 > s2 ? t1 : t2);
+      }
+    }
+
+    const fm = matches.find(m => m.round === 'Final');
+    if (fm) {
+      const t1 = resolve(fm.team1), t2 = resolve(fm.team2);
+      if (allTeams.includes(t1)) finalists.push(t1);
+      if (allTeams.includes(t2)) finalists.push(t2);
+    }
+
+    /* render boards */
+    renderScorerBoard(topScorers);
+    renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated);
+    renderCardsBoard();
+
+    /* team grid: out = eliminated OR finalist; third = in third-place match */
+    const teamGrid = document.getElementById('teamGrid');
+    teamGrid.innerHTML = '';
+    allTeams.forEach(team => {
+      const card = document.createElement('div');
+      card.className = 'team-card';
+      if      (thirdTeams.includes(team))                           card.classList.add('third');
+      else if (eliminated.has(team) || finalists.includes(team))    card.classList.add('out');
+      card.innerHTML = `<span class="flag">${FLAG[team] || '🏳️'}</span>${team}`;
+      teamGrid.appendChild(card);
+    });
+
+    /* result banner */
+    const banner = document.getElementById('resultBanner');
+    if (thirdWinner) {
+      banner.innerHTML = `季軍：<strong>${FLAG[thirdWinner] || ''} ${thirdWinner}</strong>`;
+    } else if (thirdTeams.length === 2) {
+      banner.innerHTML = `季軍戰：${FLAG[thirdTeams[0]] || ''} ${thirdTeams[0]} vs ${FLAG[thirdTeams[1]] || ''} ${thirdTeams[1]} — 等待結果`;
+    } else {
+      banner.textContent = '季軍戰賽程暫未確定';
+    }
+
+    const hkTime = new Date().toLocaleString('zh-HK', { timeZone:'Asia/Hong_Kong', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    status.innerHTML = `<span class="live">●</span> 已更新 HKT ${hkTime} · ${matches.length} 場賽事`;
+
+  } catch (err) {
+    status.textContent = '❌ 更新失敗: ' + err.message;
+    renderScorerBoard([]);
+    renderThirdBoard(null, [], [], new Set());
+    renderCardsBoard();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻ 更新數據';
+  }
+}
+
+/* ── YELLOW CARDS EDITOR ── */
+async function loadCards() {
+  // localStorage takes priority (user's latest edits)
+  const saved = localStorage.getItem('wc2026_cards');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.countries) {
+        cardCountries.forEach(c => { cardsCounts[c] = parsed.countries[c] ?? 0; });
+        cardsUpdatedAt = parsed.updated_at || null;
+        renderCardsBoard();
+        return;
+      }
+    } catch (e) {}
+  }
+  // fallback: cards.json (for GitHub Pages canonical data)
+  try {
+    const res  = await fetch('cards.json?t=' + Date.now());
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    if (data.countries) {
+      cardCountries.forEach(c => { cardsCounts[c] = data.countries[c] ?? 0; });
+    }
+    cardsUpdatedAt = data.updated_at || null;
+  } catch (e) { /* use defaults */ }
+  renderCardsBoard();
+}
+
+function openCardsEditor() {
+  const rows = document.getElementById('cardsEditRows');
+  rows.innerHTML = '';
+  cardCountries.forEach((country, i) => {
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <div class="country-label">${FLAG[country] || ''} ${country}</div>
+      <input type="number" min="0" value="${cardsCounts[country] || 0}" id="cc_${i}" inputmode="numeric">
+    `;
+    rows.appendChild(row);
+  });
+  document.getElementById('cardsJsonOutput').style.display = 'none';
+  document.getElementById('cardsModal').classList.add('show');
+}
+
+function closeCardsEditor() {
+  document.getElementById('cardsModal').classList.remove('show');
+}
+
+function saveCardsEditor() {
+  cardCountries.forEach((country, i) => {
+    cardsCounts[country] = parseInt(document.getElementById(`cc_${i}`).value, 10) || 0;
+  });
+  renderCardsBoard();
+
+  const hkDate = new Date().toLocaleString('zh-HK', { timeZone:'Asia/Hong_Kong', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+  const jsonData = { updated_at: hkDate, countries: { ...cardsCounts } };
+  localStorage.setItem('wc2026_cards', JSON.stringify(jsonData));
+  const jsonStr = JSON.stringify(jsonData, null, 2);
+  document.getElementById('cardsJsonText').value = jsonStr;
+  document.getElementById('cardsJsonOutput').style.display = 'block';
+}
+
+function copyCardsJson() {
+  document.getElementById('cardsJsonText').select();
+  document.execCommand('copy');
+  const btn = document.getElementById('copyJsonBtn');
+  btn.textContent = '✅ 已複製！';
+  setTimeout(() => { btn.textContent = '📋 複製 JSON'; }, 2000);
+}
+
+/* ── INIT ── */
+(async function init() {
+  renderScorerBoard([]);
+  renderThirdBoard(null, [], [], new Set());
+  await loadCards();
+  updateAllData();
+})();
+</script>
+</body>
+</html>
