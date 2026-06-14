@@ -255,9 +255,9 @@
     border-radius: 3px;
     white-space: nowrap;
   }
-  .badge.alive  { background: rgba(0,214,143,0.12); color: var(--green);    border: 1px solid rgba(0,214,143,0.25); }
-  .badge.third  { background: var(--gold-dim);       color: var(--gold);     border: 1px solid rgba(240,180,41,0.3); }
-  .badge.out    { background: rgba(255,255,255,0.04); color: var(--grey-txt); border: 1px solid var(--border); }
+  .badge.alive  { background: rgba(0,214,143,0.12); color: var(--green); border: 1px solid rgba(0,214,143,0.25); }
+  .badge.third  { background: var(--gold-dim);       color: var(--gold);  border: 1px solid rgba(240,180,41,0.3); }
+  .badge.out    { background: rgba(255,59,92,0.12);  color: var(--red);   border: 1px solid rgba(255,59,92,0.3); }
 
   /* ── TEAM GRID ── */
   .team-grid {
@@ -607,12 +607,14 @@ function renderScorerBoard(topScorers) {
 
 /* ── THIRD BOARD ── */
 function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
-  const STATUS_ORDER = { winner: 0, third: 1, alive: 2, out: 3 };
+  const STATUS_ORDER = { winner: 0, alive: 1, out: 2 };
+
+  const thirdLoser = thirdWinner ? thirdTeams.find(t => t !== thirdWinner) : null;
 
   const data = predictions.map(p => {
     let s = 'alive';
     if (p.third === thirdWinner) s = 'winner';
-    else if (thirdTeams.includes(p.third)) s = 'third';
+    else if (p.third === thirdLoser) s = 'out';
     else if (eliminated.has(p.third) || finalists.includes(p.third)) s = 'out';
     return { ...p, status: s };
   });
@@ -620,10 +622,9 @@ function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
 
   const rows = data.map((r, i) => {
     const badge = document.createElement('span');
-    if (r.status === 'winner')   { badge.className = 'badge third'; badge.textContent = '🥉 季軍'; }
-    else if (r.status === 'third') { badge.className = 'badge third'; badge.textContent = '季軍戰'; }
+    if (r.status === 'winner')     { badge.className = 'badge third'; badge.textContent = '🥉 季軍'; }
     else if (r.status === 'alive') { badge.className = 'badge alive'; badge.textContent = '未輸'; }
-    else                           { badge.className = 'badge out';   badge.textContent = '出局'; }
+    else                           { badge.className = 'badge out';   badge.textContent = '已輸'; }
 
     const flag = FLAG[r.third] || '';
     return makeRow(i + 1, r.name, `${flag} ${r.third}`, badge, r.status === 'winner', r.status === 'out');
