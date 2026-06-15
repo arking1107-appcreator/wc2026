@@ -652,15 +652,23 @@ function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
   });
   data.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 
-  const thirdRanks = competitionRanks(data, r => -STATUS_ORDER[r.status]);
   const rows = data.map((r, i) => {
     const badge = document.createElement('span');
     if (r.status === 'winner')     { badge.className = 'badge third'; badge.textContent = '🥉 季軍'; }
     else if (r.status === 'alive') { badge.className = 'badge alive'; badge.textContent = '未輸'; }
-    else                           { badge.className = 'badge out';   badge.textContent = '已輸'; }
+    else                           { badge.className = 'badge out';   badge.textContent = '含咗'; }
 
-    const flag = FLAG[r.third] || '';
-    return makeRow(thirdRanks[i], r.name, `${flag} ${r.third}`, badge, r.status === 'winner', r.status === 'out');
+    const div = document.createElement('div');
+    div.className = 'board-row' + (r.status === 'winner' ? ' top' : '');
+    div.innerHTML = `
+      <span class="rank-num"></span>
+      <div class="row-info">
+        <div class="person">${r.name}</div>
+        <div class="pick">${FLAG[r.third] || ''} ${r.third}</div>
+      </div>
+    `;
+    div.appendChild(badge);
+    return div;
   });
   boardRows('thirdBoard', rows);
 }
