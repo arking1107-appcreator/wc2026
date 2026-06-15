@@ -794,29 +794,28 @@ async function updateAllData() {
 
 /* ── YELLOW CARDS EDITOR ── */
 async function loadCards() {
-  // localStorage takes priority (user's latest edits)
-  const saved = localStorage.getItem('wc2026_cards');
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed.countries) {
-        cardCountries.forEach(c => { cardsCounts[c] = parsed.countries[c] ?? 0; });
-        cardsUpdatedAt = parsed.updated_at || null;
-        renderCardsBoard();
-        return;
-      }
-    } catch (e) {}
-  }
-  // fallback: cards.json (for GitHub Pages canonical data)
   try {
-    const res  = await fetch('cards.json?t=' + Date.now());
+    // always fetch from network (cache-bust), so all users see latest data
+    const res = await fetch('cards.json?t=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error();
     const data = await res.json();
     if (data.countries) {
       cardCountries.forEach(c => { cardsCounts[c] = data.countries[c] ?? 0; });
     }
     cardsUpdatedAt = data.updated_at || null;
-  } catch (e) { /* use defaults */ }
+    // keep localStorage in sync so owner's edits survive if GitHub is slower
+    localStorage.setItem('wc2026_cards', JSON.stringify(data));
+  } catch (e) {
+    // network failed — fall back to localStorage
+    try {
+      const saved = localStorage.getItem('wc2026_cards');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.countries) cardCountries.forEach(c => { cardsCounts[c] = parsed.countries[c] ?? 0; });
+        cardsUpdatedAt = parsed.updated_at || null;
+      }
+    } catch (_) {}
+  }
   renderCardsBoard();
 }
 
