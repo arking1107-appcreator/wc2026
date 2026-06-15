@@ -569,6 +569,21 @@ const cardCountries = [...new Set(predictions.map(p => p.cards))];
 let cardsCounts = Object.fromEntries(cardCountries.map(c => [c, 0]));
 let cardsUpdatedAt = null;
 
+/* ── RANKING HELPER ── */
+function competitionRanks(items, scoreFn) {
+  const ranks = [];
+  let rank = 1;
+  for (let i = 0; i < items.length; i++) {
+    if (i > 0 && scoreFn(items[i]) === scoreFn(items[i - 1])) {
+      ranks.push(ranks[i - 1]);
+    } else {
+      ranks.push(rank);
+    }
+    rank = i + 2;
+  }
+  return ranks;
+}
+
 /* ── BOARD HELPERS ── */
 function boardRows(boardId, rows) {
   const board = document.getElementById(boardId);
@@ -607,6 +622,7 @@ function renderScorerBoard(topScorers) {
     return b.goals - a.goals;
   });
 
+  const scorerRanks = competitionRanks(scored, r => r.goals ?? -1);
   const rows = scored.map((r, i) => {
     const statEl = document.createElement('span');
     if (r.goals !== null) {
@@ -616,7 +632,7 @@ function renderScorerBoard(topScorers) {
       statEl.className = 'row-stat empty';
       statEl.textContent = '—';
     }
-    return makeRow(i + 1, r.name, r.scorer, statEl, i === 0 && r.goals !== null, false);
+    return makeRow(scorerRanks[i], r.name, r.scorer, statEl, scorerRanks[i] === 1 && r.goals !== null, false);
   });
   boardRows('scorerBoard', rows);
 }
@@ -636,6 +652,7 @@ function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
   });
   data.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
 
+  const thirdRanks = competitionRanks(data, r => -STATUS_ORDER[r.status]);
   const rows = data.map((r, i) => {
     const badge = document.createElement('span');
     if (r.status === 'winner')     { badge.className = 'badge third'; badge.textContent = '🥉 季軍'; }
@@ -643,7 +660,7 @@ function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
     else                           { badge.className = 'badge out';   badge.textContent = '已輸'; }
 
     const flag = FLAG[r.third] || '';
-    return makeRow(i + 1, r.name, `${flag} ${r.third}`, badge, r.status === 'winner', r.status === 'out');
+    return makeRow(thirdRanks[i], r.name, `${flag} ${r.third}`, badge, r.status === 'winner', r.status === 'out');
   });
   boardRows('thirdBoard', rows);
 }
@@ -656,6 +673,7 @@ function renderCardsBoard() {
   }));
   data.sort((a, b) => b.count - a.count);
 
+  const cardsRanks = competitionRanks(data, r => r.count);
   const rows = data.map((r, i) => {
     const statEl = document.createElement('span');
     if (r.count > 0) {
@@ -666,7 +684,7 @@ function renderCardsBoard() {
       statEl.textContent = '—';
     }
     const flag = FLAG[r.cards] || '';
-    return makeRow(i + 1, r.name, `${flag} ${r.cards}`, statEl, i === 0 && r.count > 0, false);
+    return makeRow(cardsRanks[i], r.name, `${flag} ${r.cards}`, statEl, cardsRanks[i] === 1 && r.count > 0, false);
   });
   boardRows('cardsBoard', rows);
 }
