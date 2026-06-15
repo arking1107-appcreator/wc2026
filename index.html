@@ -483,6 +483,22 @@
   </footer>
 </div>
 
+<!-- DEV PANEL (hidden, trigger: click Panama 5x) -->
+<div id="devPanel" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#0f1923; border-top:1px solid rgba(240,180,41,0.3); padding:16px 20px; z-index:200; font-family:'JetBrains Mono',monospace;">
+  <div style="max-width:480px; margin:0 auto;">
+    <div style="font-size:10px; letter-spacing:0.15em; color:#F0B429; text-transform:uppercase; margin-bottom:10px;">⚙ Dev — 同步黃牌到 GitHub</div>
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <input id="ghToken" type="password" placeholder="GitHub token (ghp_...)" style="flex:1; background:#070b12; border:1px solid rgba(255,255,255,0.1); border-radius:5px; color:#d8e8f0; padding:8px 10px; font-family:'JetBrains Mono',monospace; font-size:12px;">
+      <button onclick="saveDevToken()" style="background:#F0B429; color:#000; border:none; border-radius:5px; padding:8px 12px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">記住</button>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button onclick="pushCardsToGitHub()" style="flex:1; background:#F0B429; color:#000; border:none; border-radius:5px; padding:10px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer; text-transform:uppercase; letter-spacing:0.05em;">☁ 同步黃牌到 GitHub</button>
+      <button onclick="closeDevPanel()" style="background:rgba(255,255,255,0.05); color:#5a7080; border:1px solid rgba(255,255,255,0.07); border-radius:5px; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:12px; cursor:pointer;">✕</button>
+    </div>
+    <div id="devStatus" style="font-size:11px; color:#5a7080; margin-top:8px;"></div>
+  </div>
+</div>
+
 <!-- YELLOW CARDS MODAL -->
 <div class="modal-overlay" id="cardsModal">
   <div class="modal">
@@ -748,6 +764,7 @@ async function updateAllData() {
       if      (thirdTeams.includes(team))                           card.classList.add('third');
       else if (eliminated.has(team) || finalists.includes(team))    card.classList.add('out');
       card.innerHTML = `<span class="flag">${FLAG[team] || '🏳️'}</span>${team}`;
+      if (team === 'Panama') card.addEventListener('click', handlePanamaClick);
       teamGrid.appendChild(card);
     });
 
@@ -843,6 +860,68 @@ function copyCardsJson() {
   const btn = document.getElementById('copyJsonBtn');
   btn.textContent = '✅ 已複製！';
   setTimeout(() => { btn.textContent = '📋 複製 JSON'; }, 2000);
+}
+
+/* ── DEV PANEL ── */
+let panamaClicks = 0, panamaTimer = null;
+
+function handlePanamaClick() {
+  panamaClicks++;
+  clearTimeout(panamaTimer);
+  panamaTimer = setTimeout(() => { panamaClicks = 0; }, 2000);
+  if (panamaClicks >= 5) {
+    panamaClicks = 0;
+    const token = localStorage.getItem('wc2026_ghtoken') || '';
+    document.getElementById('ghToken').value = token;
+    document.getElementById('devStatus').textContent = '';
+    document.getElementById('devPanel').style.display = 'block';
+  }
+}
+
+function closeDevPanel() {
+  document.getElementById('devPanel').style.display = 'none';
+}
+
+function saveDevToken() {
+  const t = document.getElementById('ghToken').value.trim();
+  if (t) { localStorage.setItem('wc2026_ghtoken', t); document.getElementById('devStatus').textContent = '✓ Token 已記住'; }
+}
+
+async function pushCardsToGitHub() {
+  const token = document.getElementById('ghToken').value.trim();
+  if (!token) { document.getElementById('devStatus').textContent = '❌ 請輸入 token'; return; }
+  localStorage.setItem('wc2026_ghtoken', token);
+
+  const USER = 'arking1107-appcreator', REPO = 'wc2026';
+  const statusEl = document.getElementById('devStatus');
+  statusEl.textContent = '⏳ 上傳中...';
+
+  try {
+    const hkDate = new Date().toLocaleString('zh-HK', { timeZone:'Asia/Hong_Kong', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const jsonData = { updated_at: hkDate, countries: { ...cardsCounts } };
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(jsonData, null, 2))));
+
+    const shaRes = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/cards.json`, {
+      headers: { Authorization: 'token ' + token }
+    });
+    const shaData = await shaRes.json();
+    const sha = shaData.sha;
+
+    const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/cards.json`, {
+      method: 'PUT',
+      headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'update: yellow cards ' + hkDate, content, sha })
+    });
+    const result = await res.json();
+    if (result.content) {
+      statusEl.textContent = '✅ 同步成功！朋友 30 秒後見到更新';
+      localStorage.setItem('wc2026_cards', JSON.stringify(jsonData));
+    } else {
+      statusEl.textContent = '❌ 失敗: ' + (result.message || '未知錯誤');
+    }
+  } catch (e) {
+    statusEl.textContent = '❌ 錯誤: ' + e.message;
+  }
 }
 
 /* ── INIT ── */
