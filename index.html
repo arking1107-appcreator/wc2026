@@ -200,6 +200,8 @@
     transition: background 0.12s;
   }
   .board-row:last-child { border-bottom: none; }
+  .board-row.no-rank { grid-template-columns: 1fr auto; }
+  .board-row.no-rank .rank-num { display: none; }
   .board-row:hover { background: rgba(255,255,255,0.025); }
   .board-row.top { background: var(--gold-dim); }
   .board-row.dimmed { opacity: 0.28; }
@@ -659,7 +661,7 @@ function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
     else                           { badge.className = 'badge out';   badge.textContent = '含咗'; }
 
     const div = document.createElement('div');
-    div.className = 'board-row' + (r.status === 'winner' ? ' top' : '');
+    div.className = 'board-row no-rank' + (r.status === 'winner' ? ' top' : '');
     div.innerHTML = `
       <span class="rank-num"></span>
       <div class="row-info">
