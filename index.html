@@ -657,7 +657,7 @@ function renderThirdBoard(thirdWinner, finalists, thirdTeams, eliminated) {
   const rows = data.map((r, i) => {
     const badge = document.createElement('span');
     if (r.status === 'winner')     { badge.className = 'badge third'; badge.textContent = '🥉 季軍'; }
-    else if (r.status === 'alive') { badge.className = 'badge alive'; badge.textContent = '未輸'; }
+    else if (r.status === 'alive') { badge.className = 'badge alive'; badge.textContent = '未含'; }
     else                           { badge.className = 'badge out';   badge.textContent = '含咗'; }
 
     const div = document.createElement('div');
