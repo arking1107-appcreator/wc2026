@@ -732,7 +732,7 @@ async function updateAllData() {
       return placeholderResolve[ref] || (allTeams.includes(ref) ? ref : ref);
     }
 
-    const KW = ['Round of 16','Quarter','Semi','Final','third place','Third place','third-place'];
+    const KW = ['Round of 32','Round of 16','Quarter','Semi','Final','third place','Third place','third-place'];
     const knockoutMatches = matches.filter(m => KW.some(k => (m.round || '').includes(k)));
 
     for (let pass = 0; pass < 5; pass++) {
