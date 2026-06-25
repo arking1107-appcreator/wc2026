@@ -699,6 +699,51 @@ function renderCardsBoard() {
   boardRows('cardsBoard', rows);
 }
 
+/* ── GROUP STAGE ELIMINATION ── */
+function getGroupEliminations(matches) {
+  const groupMatches = matches.filter(m => m.group && m.score && m.score.ft);
+  const groups = {};
+
+  groupMatches.forEach(m => {
+    const g = m.group;
+    if (!groups[g]) groups[g] = {};
+    const t1 = m.team1, t2 = m.team2;
+    const [s1, s2] = m.score.ft;
+    [t1, t2].forEach(t => { if (!groups[g][t]) groups[g][t] = { p: 0, gd: 0, gf: 0, games: 0 }; });
+    groups[g][t1].games++; groups[g][t2].games++;
+    groups[g][t1].gf += s1; groups[g][t2].gf += s2;
+    groups[g][t1].gd += s1 - s2; groups[g][t2].gd += s2 - s1;
+    if      (s1 > s2) { groups[g][t1].p += 3; }
+    else if (s2 > s1) { groups[g][t2].p += 3; }
+    else              { groups[g][t1].p += 1; groups[g][t2].p += 1; }
+  });
+
+  const eliminated = new Set();
+  const thirds = [];
+  let completedGroups = 0;
+
+  Object.entries(groups).forEach(([, teams]) => {
+    const standings = Object.entries(teams)
+      .map(([team, s]) => ({ team, ...s }))
+      .sort((a, b) => b.p - a.p || b.gd - a.gd || b.gf - a.gf);
+
+    // group complete = all 4 teams played 3 games
+    if (standings.length < 4 || standings.some(t => t.games < 3)) return;
+    completedGroups++;
+
+    eliminated.add(standings[3].team); // 4th place definitely out
+    thirds.push(standings[2]);         // collect 3rd place
+  });
+
+  // once all 12 groups done, worst 4 third-place teams are out
+  if (completedGroups === 12 && thirds.length === 12) {
+    thirds.sort((a, b) => b.p - a.p || b.gd - a.gd || b.gf - a.gf);
+    thirds.slice(8).forEach(t => eliminated.add(t.team));
+  }
+
+  return eliminated;
+}
+
 /* ── FETCH WORLD CUP DATA ── */
 async function updateAllData() {
   const btn    = document.getElementById('updateBtn');
@@ -726,6 +771,9 @@ async function updateAllData() {
     /* knockout resolution */
     const placeholderResolve = {};
     const eliminated = new Set();
+
+    // group stage eliminations (4th place + worst 3rd place)
+    getGroupEliminations(matches).forEach(t => eliminated.add(t));
 
     function resolve(ref) {
       if (!ref) return null;
