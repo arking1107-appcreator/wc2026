@@ -792,6 +792,10 @@ async function updateAllData() {
         let winner, loser;
         if (m.score.p) {
           [winner, loser] = m.score.p[0] > m.score.p[1] ? [t1, t2] : [t2, t1];
+        } else if (m.score.et) {
+          const [e1, e2] = m.score.et;
+          if (e1 !== e2) [winner, loser] = e1 > e2 ? [t1, t2] : [t2, t1];
+          else return;
         } else if (s1 !== s2) {
           [winner, loser] = s1 > s2 ? [t1, t2] : [t2, t1];
         } else return;
